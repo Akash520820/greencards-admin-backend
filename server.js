@@ -3,7 +3,7 @@ const app = require("./app");
 const connectDB = require("./shared/db/index");
 const logger = require("./shared/utils/logger");
 
-const PORT = process.env.ADMIN_SERVICE_PORT || 5003;
+const PORT = process.env.PORT || process.env.ADMIN_SERVICE_PORT || 5003;
 
 connectDB()
   .then(() => {
