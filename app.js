@@ -15,6 +15,9 @@ const siteContentRouter = require("./routes/siteContent.routes");
 
 const app = express();
 
+// Trust reverse proxy (Render / API Gateway) for express-rate-limit and X-Forwarded-For
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(compression());
 app.use(cors({ origin: true, credentials: true }));
