@@ -8,6 +8,38 @@ const SellerProfile = require("../models/sellerProfile.model");
 const Review = require("../models/review.model");
 const { recalculateProductRatings } = require("../controllers/review.controller");
 const { logAudit } = require("../shared/utils/auditLog.util");
+const logger = require("../shared/utils/logger");
+
+/**
+ * Fires an internal command at another microservice (best-effort, non-blocking).
+ * Admin actions should never fail because a downstream service is temporarily
+ * unreachable — we log a warning and move on. The admin's local shadow copy
+ * is already updated, which keeps reads consistent.
+ *
+ * @param {string} serviceUrl  - e.g. process.env.USER_BACKEND_INTERNAL_URL
+ * @param {string} commandType - e.g. "USER_SET_ACTIVE"
+ * @param {object} payload     - command-specific data
+ */
+const propagateCommand = async (serviceUrl, commandType, payload) => {
+  try {
+    const res = await fetch(`${serviceUrl}/internal/commands`, {
+      method:  "POST",
+      headers: {
+        "Content-Type":    "application/json",
+        "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+      },
+      body: JSON.stringify({ commandType, payload }),
+      signal: AbortSignal.timeout(5000), // 5-second timeout — don't stall the admin UI
+    });
+    if (!res.ok) {
+      logger.warn(`propagateCommand(${commandType}) to ${serviceUrl} returned ${res.status}`);
+    }
+  } catch (err) {
+    // Network error, timeout, or service down — log and continue
+    logger.warn(`propagateCommand(${commandType}) to ${serviceUrl} failed: ${err.message}`);
+  }
+};
+
 
 // ---- Dashboard summary stats ----
 const getDashboardStats = asyncHandler(async (req, res) => {
@@ -75,6 +107,13 @@ const toggleCustomerActive = asyncHandler(async (req, res) => {
     { type: "User", id: user._id },
     {},
     req
+  );
+
+  // Propagate to user-backend (authoritative user_db) — best-effort, non-blocking
+  propagateCommand(
+    process.env.USER_BACKEND_INTERNAL_URL,
+    "USER_SET_ACTIVE",
+    { userId: user._id.toString(), isActive: user.isActive }
   );
 
   return res
@@ -183,6 +222,7 @@ const suspendSeller = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Only an approved seller can be suspended");
   }
 
+  // 1. Update local admin_db shadow copies
   sellerProfile.status = "suspended";
   await sellerProfile.save();
 
@@ -191,6 +231,20 @@ const suspendSeller = asyncHandler(async (req, res) => {
   );
 
   await logAudit(req.staff, "seller.suspend", { type: "SellerProfile", id: sellerProfile._id }, {}, req);
+
+  // 2. Propagate to the owning databases — best-effort, non-blocking
+  // seller-backend owns the SellerProfile record in seller_db
+  propagateCommand(
+    process.env.SELLER_BACKEND_INTERNAL_URL,
+    "SELLER_SET_STATUS",
+    { sellerProfileId: sellerProfile._id.toString(), status: "suspended" }
+  );
+  // user-backend owns the User record in user_db (role downgrade)
+  propagateCommand(
+    process.env.USER_BACKEND_INTERNAL_URL,
+    "USER_ROLE_UPDATE",
+    { userId: sellerProfile.userId.toString(), role: "user" }
+  );
 
   return res.status(200).json(new ApiResponse(200, { user, sellerProfile }, "Seller suspended"));
 });
