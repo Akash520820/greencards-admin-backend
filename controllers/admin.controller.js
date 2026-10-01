@@ -109,9 +109,14 @@ const toggleCustomerActive = asyncHandler(async (req, res) => {
     req
   );
 
-  // Propagate to user-backend (authoritative user_db) — best-effort, non-blocking
+  // Propagate to user-backend (authoritative user_db) and seller-backend (local User shadow) — best-effort, non-blocking
   propagateCommand(
     process.env.USER_BACKEND_INTERNAL_URL,
+    "USER_SET_ACTIVE",
+    { userId: user._id.toString(), isActive: user.isActive }
+  );
+  propagateCommand(
+    process.env.SELLER_BACKEND_INTERNAL_URL,
     "USER_SET_ACTIVE",
     { userId: user._id.toString(), isActive: user.isActive }
   );

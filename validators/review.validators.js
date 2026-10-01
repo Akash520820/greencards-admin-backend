@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { objectIdSchema } = require("./order.validators");
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
 // Matches the review model's own `min: 1, max: 5` constraint — catching it
 // here means a bad rating never reaches Mongoose validation (or worse,

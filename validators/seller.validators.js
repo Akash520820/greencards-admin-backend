@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { objectIdSchema } = require("../validators/order.validators");
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
 // IFSC: 4 letters (bank code), a literal 0, then 6 alphanumeric (branch code)
 // — the standard Indian bank-branch code format.

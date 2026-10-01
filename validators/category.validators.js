@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { objectIdSchema } = require("../validators/order.validators");
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
 // parentCategory arrives as a string over multipart/form-data — either a
 // valid ObjectId, or an empty string meaning "no parent" (the controller
