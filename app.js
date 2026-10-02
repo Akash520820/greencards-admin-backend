@@ -63,6 +63,7 @@ app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/coupons", couponRouter);
 app.use("/api/v1/site-content", siteContentRouter);
+app.use("/api/v1/site_content", siteContentRouter);
 
 app.use(notFound);
 app.use(errorHandler);
