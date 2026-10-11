@@ -6,19 +6,11 @@ const startKeepAlive = require("./shared/utils/keepAlive");
 const mongoose = require("mongoose");
 
 // ─── Fail-fast: required env vars ────────────────────────────────────────────
-const hasAccessSecret =
-  process.env.STAFF_ACCESS_TOKEN_SECRET ||
-  process.env.SUPERADMIN_ACCESS_TOKEN_SECRET ||
-  process.env.ACCESS_TOKEN_SECRET;
-const hasRefreshSecret =
-  process.env.STAFF_REFRESH_TOKEN_SECRET ||
-  process.env.SUPERADMIN_REFRESH_TOKEN_SECRET ||
-  process.env.REFRESH_TOKEN_SECRET;
+const { assertJwtConfig } = require("./shared/utils/jwtKeys");
+assertJwtConfig();
 
 const missing = [];
 if (!process.env.MONGODB_URI) missing.push("MONGODB_URI");
-if (!hasAccessSecret) missing.push("STAFF_ACCESS_TOKEN_SECRET (or SUPERADMIN_ACCESS_TOKEN_SECRET)");
-if (!hasRefreshSecret) missing.push("STAFF_REFRESH_TOKEN_SECRET (or SUPERADMIN_REFRESH_TOKEN_SECRET)");
 
 if (missing.length > 0) {
   console.error(`[admin-backend] Missing required environment variables: ${missing.join(", ")}`);

@@ -36,8 +36,7 @@ app.use(
       if (
         !origin ||
         ALLOWED_ORIGINS.includes(origin) ||
-        ALLOWED_ORIGINS.includes(origin.replace(/\/$/, "")) ||
-        origin.endsWith(".github.io")
+        ALLOWED_ORIGINS.includes(origin.replace(/\/$/, ""))
       ) {
         callback(null, true);
       } else {

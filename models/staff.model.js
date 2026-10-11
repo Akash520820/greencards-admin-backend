@@ -118,41 +118,14 @@ staffSchema.methods.hasPermission = function (permission) {
   return this.permissions.includes(permission);
 };
 
-staffSchema.methods.generateAccessToken = function () {
-  const secret =
-    process.env.STAFF_ACCESS_TOKEN_SECRET ||
-    process.env.SUPERADMIN_ACCESS_TOKEN_SECRET ||
-    process.env.ACCESS_TOKEN_SECRET;
-  const expiry =
-    process.env.STAFF_ACCESS_TOKEN_EXPIRY ||
-    process.env.SUPERADMIN_ACCESS_TOKEN_EXPIRY ||
-    process.env.ACCESS_TOKEN_EXPIRY ||
-    "15m";
-  return jwt.sign(
-    {
-      _id: this._id,
-      companyEmail: this.companyEmail,
-      role: this.role,
-      isStaff: true,
-    },
-    secret,
-    { expiresIn: expiry }
-  );
+// superadmin passes every permission check regardless of the permissions array
+staffSchema.methods.hasPermission = function (permission) {
+  if (this.role === "superadmin") return true;
+  return this.permissions.includes(permission);
 };
 
-staffSchema.methods.generateRefreshToken = function () {
-  const secret =
-    process.env.STAFF_REFRESH_TOKEN_SECRET ||
-    process.env.SUPERADMIN_REFRESH_TOKEN_SECRET ||
-    process.env.REFRESH_TOKEN_SECRET;
-  const expiry =
-    process.env.STAFF_REFRESH_TOKEN_EXPIRY ||
-    process.env.SUPERADMIN_REFRESH_TOKEN_EXPIRY ||
-    process.env.REFRESH_TOKEN_EXPIRY ||
-    "1d";
-  return jwt.sign({ _id: this._id, isStaff: true }, secret, {
-    expiresIn: expiry,
-  });
-};
+// NOTE: Token-minting methods (generateAccessToken, generateRefreshToken)
+// were removed. Only greencards-superadmin-backend holds the STAFF private
+// key and can sign staff tokens.
 
 module.exports = mongoose.model("Staff", staffSchema);
