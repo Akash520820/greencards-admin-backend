@@ -7,7 +7,9 @@ const mongoose = require("mongoose");
 
 // ─── Fail-fast: required env vars ────────────────────────────────────────────
 const { assertJwtConfig } = require("./shared/utils/jwtKeys");
-assertJwtConfig();
+assertJwtConfig("greencards-admin-backend", {
+  verifies: ["customer", "staff"],
+});
 
 const missing = [];
 if (!process.env.MONGODB_URI) missing.push("MONGODB_URI");
